@@ -2,7 +2,11 @@ package main
 
 import (
 	"fmt"
+	"github.com/joho/godotenv"
 	"net/http"
+	"os"
+
+	kdb "kobili/user-ms/db"
 )
 
 func greetingMessage(w http.ResponseWriter, r *http.Request) {
@@ -15,7 +19,19 @@ func greetingMessage(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, "Hello!")
 }
 
+func initDotEnv() {
+	err := godotenv.Load()
+	if err != nil {
+		fmt.Println("No .env found. Skipping...")
+	}
+}
+
 func main() {
+	initDotEnv()
+	fmt.Println("POSTGRES_URL =", os.Getenv("POSTGRES_URL"))
+	db := kdb.Connect()
+	defer db.Close()
+
 	http.HandleFunc("/", greetingMessage)
 
 	fmt.Println("Listening on 127.0.0.0:8080")
