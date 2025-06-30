@@ -1,0 +1,23 @@
+services:
+  postgres:
+    image: postgres:14
+    ports:
+      - 3432:5432
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=go_test
+      - PGDATA=/var/lib/postgresql/data/pgdata
+    volumes:
+      - ./pgData:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d go_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 0
+    networks:
+      - user-net
+
+networks:
+  user-net:
+    driver: bridge
