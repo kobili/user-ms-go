@@ -46,23 +46,32 @@ func CreateUser(dbConn *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		_, err = dbConn.ExecContext(
+		var user entities.UserEntity
+		err = dbConn.QueryRowContext(
 			r.Context(),
-			`INSERT INTO users (username, password)
-			VALUES ($1, $2)`,
+			`INSERT INTO "users" ("username", "password")
+			VALUES ($1, $2)
+			RETURNING "id", "username", "password"`,
 			requestBody.Username,
 			string(passwordHash),
-		)
+		).Scan(&user.Id, &user.Username, &user.Password)
 		if err != nil {
 			http.Error(w, fmt.Sprintf("Error writing to db: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		token, err := utils.CreateJWTForUser(user)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to sign JWT: %v", err), http.StatusInternalServerError)
 			return
 		}
 
 		w.Header().Add("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(map[string]string{
-			"username": requestBody.Username,
-			"password": string(passwordHash),
+			"id":       user.Id,
+			"username": user.Username,
+			"token":    token,
 		})
 	}
 }
