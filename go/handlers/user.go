@@ -8,6 +8,8 @@ import (
 	"net/http"
 
 	"golang.org/x/crypto/bcrypt"
+
+	"kobili/user-ms/entities"
 )
 
 const BCRYPT_COST = 3
@@ -60,6 +62,60 @@ func CreateUser(dbConn *sql.DB) http.HandlerFunc {
 		json.NewEncoder(w).Encode(map[string]string{
 			"username": requestBody.Username,
 			"password": string(passwordHash),
+		})
+	}
+}
+
+type LoginRequest struct {
+	Username string `json:"username"`
+	Password string `json:"password"`
+}
+
+func Login(dbConn *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodPost {
+			http.Error(w, fmt.Sprintf("Method %s not allowed", r.Method), http.StatusMethodNotAllowed)
+			return
+		}
+
+		body, err := io.ReadAll(r.Body)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to read request body: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		var requestBody LoginRequest
+		err = json.Unmarshal(body, &requestBody)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to parse JSON: %v", err), http.StatusBadRequest)
+			return
+		}
+
+		var user entities.UserEntity
+		err = dbConn.QueryRowContext(
+			r.Context(),
+			`SELECT id, username, password FROM users WHERE username = $1`,
+			requestBody.Username,
+		).Scan(&user.Id, &user.Username, &user.Password)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				http.Error(w, "Invalid username or password", http.StatusNotFound)
+				return
+			}
+			http.Error(w, fmt.Sprintf("Failed to retreive user: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		err = bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(requestBody.Password))
+		if err != nil {
+			http.Error(w, "Invalid username or password", http.StatusNotFound)
+			return
+		}
+
+		w.Header().Add("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{
+			"id":       user.Id,
+			"username": user.Username,
 		})
 	}
 }
