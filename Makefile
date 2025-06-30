@@ -1,5 +1,5 @@
 build:
-	go build -o app
+	cd go && go build -o ../app;
 
 run:
 	./app
