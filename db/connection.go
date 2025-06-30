@@ -11,8 +11,6 @@ import (
 func Connect() *sql.DB {
 	connectionString := os.Getenv("POSTGRES_URL")
 
-	fmt.Println(connectionString)
-
 	db, err := sql.Open("pgx", connectionString)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Unable to open database handle: %v\n", err)
