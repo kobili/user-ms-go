@@ -6,12 +6,12 @@ services:
     environment:
       - POSTGRES_USER=postgres
       - POSTGRES_PASSWORD=password
-      - POSTGRES_DB=go_test
+      - POSTGRES_DB=userms
       - PGDATA=/var/lib/postgresql/data/pgdata
     volumes:
       - ./pgData:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d go_test"]
+      test: ["CMD-SHELL", "pg_isready -U postgres -d userms"]
       interval: 5s
       timeout: 5s
       retries: 0

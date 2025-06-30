@@ -1,0 +1,7 @@
+services:
+  migrate:
+    image: migrate/migrate:v4.18.3
+    volumes:
+      - ./migrations/sql:/migrations
+    networks:
+      - user-net
