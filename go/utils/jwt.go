@@ -3,6 +3,7 @@ package utils
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -10,6 +11,11 @@ import (
 	"github.com/golang-jwt/jwt/v5"
 
 	"kobili/user-ms/entities"
+)
+
+var (
+	ErrTokenExpired = errors.New("the provided token has expired")
+	ErrUserNotFound = errors.New("the user associated with the token could not be found")
 )
 
 func CreateJWTForUser(user entities.UserEntity) (string, error) {
@@ -35,6 +41,15 @@ func CreateJWTForUser(user entities.UserEntity) (string, error) {
 	return signedToken, nil
 }
 
+/*
+Retrieves the user given by the User ID in the subject claim of the given `token`.
+
+# Returns
+
+- `ErrTokenExpired` if the token has expired
+
+- `ErrUserNotFound` if the user associated with the token does not exist
+*/
 func GetUserFromJWT(token string, dbConn *sql.DB, ctx context.Context) (*entities.UserEntity, error) {
 	key := os.Getenv("JWT_SIGNING_KEY")
 	if key == "" {
@@ -53,6 +68,9 @@ func GetUserFromJWT(token string, dbConn *sql.DB, ctx context.Context) (*entitie
 		jwt.WithIssuer("kobili/user-ms"),
 	)
 	if err != nil {
+		if errors.Is(err, jwt.ErrTokenExpired) {
+			return nil, ErrTokenExpired
+		}
 		return nil, fmt.Errorf("failed to verify JWT: %v", err)
 	}
 
@@ -74,7 +92,7 @@ func GetUserFromJWT(token string, dbConn *sql.DB, ctx context.Context) (*entitie
 	).Scan(&user.Id, &user.Username, &user.Password)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return nil, fmt.Errorf("token is for a non existent user")
+			return nil, ErrUserNotFound
 		}
 		return nil, fmt.Errorf("error fetching user from token: %v", err)
 	}

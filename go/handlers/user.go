@@ -154,15 +154,19 @@ func GetUser(dbConn *sql.DB) http.HandlerFunc {
 			http.Error(w, "Authorization header should be a Bearer token", http.StatusUnauthorized)
 			return
 		}
-
 		accessToken := authHeaderPieces[1]
-		// jwt.WithValidMethods([]string{
-		// 	jwt.SigningMethodES256.Name,
-		// })
 
 		user, err := utils.GetUserFromJWT(accessToken, dbConn, r.Context())
 		if err != nil {
 			// TODO: make this error handling less general
+			if err == utils.ErrTokenExpired {
+				http.Error(w, "the provided access token has expired", http.StatusUnauthorized)
+				return
+			}
+			if err == utils.ErrUserNotFound {
+				http.Error(w, "the provided access token does not have permission", http.StatusForbidden)
+				return
+			}
 			http.Error(w, fmt.Sprintf("Error retrieving user from JWT: %v", err), http.StatusInternalServerError)
 			return
 		}
