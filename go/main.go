@@ -34,6 +34,7 @@ func main() {
 
 	http.HandleFunc("/api/users/register", handlers.CreateUser(db))
 	http.HandleFunc("/api/users/login", handlers.Login(db))
+	http.HandleFunc("/api/users/me", handlers.GetUser(db))
 
 	fmt.Println("Listening on 127.0.0.0:8080")
 	http.ListenAndServe(":8080", nil)

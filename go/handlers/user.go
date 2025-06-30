@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 
 	"golang.org/x/crypto/bcrypt"
 
@@ -131,6 +132,45 @@ func Login(dbConn *sql.DB) http.HandlerFunc {
 		w.Header().Add("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{
 			"token": signedToken,
+		})
+	}
+}
+
+func GetUser(dbConn *sql.DB) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
+		if r.Method != http.MethodGet {
+			http.Error(w, fmt.Sprintf("Method %s not allowed", r.Method), http.StatusMethodNotAllowed)
+			return
+		}
+
+		authHeader := r.Header.Get("Authorization")
+		if authHeader == "" {
+			http.Error(w, "Missing Authorization header", http.StatusUnauthorized)
+			return
+		}
+
+		authHeaderPieces := strings.Split(authHeader, " ")
+		if len(authHeaderPieces) != 2 || authHeaderPieces[0] != "Bearer" {
+			http.Error(w, "Authorization header should be a Bearer token", http.StatusUnauthorized)
+			return
+		}
+
+		accessToken := authHeaderPieces[1]
+		// jwt.WithValidMethods([]string{
+		// 	jwt.SigningMethodES256.Name,
+		// })
+
+		user, err := utils.GetUserFromJWT(accessToken, dbConn, r.Context())
+		if err != nil {
+			// TODO: make this error handling less general
+			http.Error(w, fmt.Sprintf("Error retrieving user from JWT: %v", err), http.StatusInternalServerError)
+			return
+		}
+
+		w.Header().Add("Content-Type", "application/json")
+		json.NewEncoder(w).Encode(map[string]string{
+			"id":       user.Id,
+			"username": user.Username,
 		})
 	}
 }
