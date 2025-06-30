@@ -6,6 +6,7 @@ import (
 	"net/http"
 
 	kdb "kobili/user-ms/db"
+	"kobili/user-ms/handlers"
 )
 
 func initDotEnv() {
@@ -15,23 +16,15 @@ func initDotEnv() {
 	}
 }
 
-func greetingMessage(w http.ResponseWriter, r *http.Request) {
-	if r.Method != "GET" {
-		w.WriteHeader(http.StatusMethodNotAllowed)
-		fmt.Fprintf(w, "Method %s not allowed", r.Method)
-		return
-	}
-
-	fmt.Fprint(w, "Hello!")
-}
-
 func main() {
 	initDotEnv()
 
 	db := kdb.Connect()
 	defer db.Close()
 
-	http.HandleFunc("/", greetingMessage)
+	http.HandleFunc("/", handlers.GreetingMessage)
+
+	http.HandleFunc("/api/users/register", handlers.CreateUser(db))
 
 	fmt.Println("Listening on 127.0.0.0:8080")
 	http.ListenAndServe(":8080", nil)

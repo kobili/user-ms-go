@@ -23,3 +23,6 @@ count ?=
 migrate-down:
 	docker compose -f docker-compose.yml -f compose.migrate.yml run --rm migrate -path /migrations -database postgres://postgres:password@postgres:5432/userms?sslmode=disable down ${count}
 md: migrate-down
+
+go-tidy:
+	cd go && go mod tidy
