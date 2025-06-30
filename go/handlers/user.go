@@ -43,7 +43,18 @@ func CreateUser(dbConn *sql.DB) http.HandlerFunc {
 			return
 		}
 
-		// TODO: insert into db
+		_, err = dbConn.ExecContext(
+			r.Context(),
+			`INSERT INTO users (username, password)
+			VALUES ($1, $2)`,
+			requestBody.Username,
+			string(passwordHash),
+		)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Error writing to db: %v", err), http.StatusInternalServerError)
+			return
+		}
+
 		w.Header().Add("Content-Type", "application/json")
 		w.WriteHeader(http.StatusCreated)
 		json.NewEncoder(w).Encode(map[string]string{
