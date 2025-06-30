@@ -2,8 +2,11 @@ package main
 
 import (
 	"fmt"
-	"github.com/joho/godotenv"
+	"log"
 	"net/http"
+	"os"
+
+	"github.com/joho/godotenv"
 
 	kdb "kobili/user-ms/db"
 	"kobili/user-ms/handlers"
@@ -18,6 +21,11 @@ func initDotEnv() {
 
 func main() {
 	initDotEnv()
+
+	jwtSigningKey := os.Getenv("JWT_SIGNING_KEY")
+	if jwtSigningKey == "" {
+		log.Fatalf("JWT_SIGNING_KEY not set")
+	}
 
 	db := kdb.Connect()
 	defer db.Close()

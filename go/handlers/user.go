@@ -10,6 +10,7 @@ import (
 	"golang.org/x/crypto/bcrypt"
 
 	"kobili/user-ms/entities"
+	"kobili/user-ms/utils"
 )
 
 const BCRYPT_COST = 3
@@ -112,10 +113,15 @@ func Login(dbConn *sql.DB) http.HandlerFunc {
 			return
 		}
 
+		signedToken, err := utils.CreateJWTForUser(user)
+		if err != nil {
+			http.Error(w, fmt.Sprintf("Failed to sign JWT: %v", err), http.StatusInternalServerError)
+			return
+		}
+
 		w.Header().Add("Content-Type", "application/json")
 		json.NewEncoder(w).Encode(map[string]string{
-			"id":       user.Id,
-			"username": user.Username,
+			"token": signedToken,
 		})
 	}
 }
